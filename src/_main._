@@ -1,0 +1,90 @@
+
+#include <SDL.h>
+#include <SDL_ttf.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include "pong.h"
+#include "GameEngine/Font/Font.h"
+
+int main(int argc, char* args[]) {
+    //Screen dimension constants
+    const int SCREEN_WIDTH = 640;
+    const int SCREEN_HEIGHT = 480;
+    const int SCREEN_FPS = 60; 
+    const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
+
+    SDL_Window* window = NULL;
+
+    //Initialize SDL
+    if (SDL_Init(SDL_INIT_VIDEO) == 0 && TTF_Init() == 0) {
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+        window = SDL_CreateWindow("Pong", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+        SDL_Renderer *gRenderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);// | SDL_RENDERER_PRESENTVSYNC);
+        struct GameEngine_Font *frames = GameEngine_Font_Init(gRenderer, "./resources/font/press-start/prstart.ttf", 25);
+        bool quit = false;
+        bool paused = false;
+        SDL_Event e;
+
+        Pong_Init(0, 0, SCREEN_HEIGHT, SCREEN_WIDTH);
+        Pong_SetRenderer(gRenderer);
+                
+        Uint32 lasttime = SDL_GetTicks();        
+        Uint32 currenttime;
+        Uint32 elapsedTime = 0;
+
+        while (!quit) {
+            currenttime = SDL_GetTicks();
+            elapsedTime = currenttime - lasttime;
+
+            //processInput();
+            //update();
+            //render();
+
+            while (SDL_PollEvent(&e) != 0) {
+                //User requests quit
+                if (e.type == SDL_QUIT) {
+                    quit = true;
+                }
+                if (e.type == SDL_KEYDOWN) {
+                    switch (e.key.keysym.sym) {
+                        case SDLK_ESCAPE:
+                            quit = true;
+                            break;
+                        case SDLK_p:
+                            paused = !paused;
+                            break;
+                    }
+                }
+            }
+
+            if (paused == false) {
+                Pong_Handle(SDL_GetKeyboardState(NULL));
+                Pong_Draw(gRenderer);
+            }
+
+            frames->setTextInt(frames, elapsedTime)
+                ->writeCentered(frames, 30,30);
+            
+            //Update Screen
+            SDL_RenderPresent(gRenderer);
+            
+            printf("%d - %d - %d\n", lasttime, currenttime, elapsedTime);
+            lasttime = currenttime;
+            
+            SDL_Delay(16);
+        }
+
+        SDL_DestroyRenderer(gRenderer);
+    } else {
+        printf("Unable to initialize SDL2\n");
+    }
+
+    SDL_DestroyWindow(window);
+
+    Pong_Destroy();
+    //Quit SDL subsystems
+    TTF_Quit();
+    SDL_Quit();
+
+    return 0;
+}
